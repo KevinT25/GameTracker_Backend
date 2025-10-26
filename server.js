@@ -1,14 +1,27 @@
 import express from 'express'
-import mongoose from 'mongoose'
 import cors from 'cors'
-import userRoutes from './routes/user.js'
+import { connectDB } from './config/db.js'
+
+import gameRoutes from './routes/gameRoutes.js'
+import reviewRoutes from './routes/reviewRoutes.js'
+import userRoutes from './routes/userRoutes.js'
+import achievementRoutes from './routes/achievementRoutes.js'
 
 const app = express()
+const port = 3000
+
+// Middleware
 app.use(cors())
 app.use(express.json())
 
-mongoose.connect('mongodb://localhost:27017/gametracker')
+// Conexión a la base de datos
+connectDB()
 
+// Rutas
+app.use('/api/games', gameRoutes)
+app.use('/api/reviews', reviewRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/achievements', achievementRoutes)
 
-app.listen(4000, () => console.log('Servidor activo en puerto 4000'))
+// Servidor
+app.listen(port, () => console.log(`🚀 Server running on port ${port}`))
