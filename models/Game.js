@@ -10,6 +10,7 @@ const gameSchema = new mongoose.Schema({
   imagenPortada: { type: String, required: true },
   descripcion: { type: String, default: 'Comienza tu aventura' },
   completado: { type: Boolean, default: false },
+  misjuegos: {type: Boolean, default: false},
   fechaCreacion: { type: Date, default: Date.now },
 })
 
