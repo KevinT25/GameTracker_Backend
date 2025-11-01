@@ -11,7 +11,7 @@ const app = express()
 const port = 3000
 
 // Middleware
-app.use(cors())
+app.use(cors({ origin: 'http://localhost:5173' })) // <--- permitir frontend
 app.use(express.json())
 
 // Conexión a la base de datos
@@ -24,4 +24,4 @@ app.use('/api/users', userRoutes)
 app.use('/api/achievements', achievementRoutes)
 
 // Servidor
-app.listen(port, () => console.log(`🚀 Server running on port ${port}`))
+app.listen(port, () => console.log(`Server running on port ${port}`))
