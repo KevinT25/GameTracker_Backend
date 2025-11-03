@@ -57,13 +57,13 @@ router.post('/login', async (req, res) => {
 
 // Obtener todos los usuarios
 router.get('/', async (req, res) => {
-  const users = await User.find().populate('logros', 'nombre descripcion')
+  const users = await User.find()
   res.status(200).json(users)
 })
 
 // Obtener un usuario específico
 router.get('/users/:id', async (req, res) => {
-  const user = await User.findById(req.params.id).populate('logros', 'nombre')
+  const user = await User.findById(req.params.id)
 
   if (!user) {
     return res.status(404).json({ error: 'Usuario no encontrado' })

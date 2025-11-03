@@ -4,6 +4,7 @@ import { connectDB } from './config/db.js'
 
 import gameRoutes from './routes/gameRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
+import datauserRoutes from './routes/datauserRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import achievementRoutes from './routes/achievementRoutes.js'
 
@@ -22,6 +23,7 @@ app.use('/api/games', gameRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/achievements', achievementRoutes)
+app.use('/api/dataUser', datauserRoutes)
 
 // Servidor
 app.listen(port, () => console.log(`Server running on port ${port}`))
