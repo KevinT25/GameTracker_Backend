@@ -1,5 +1,5 @@
 import express from 'express'
-import Datauser from '../models/datauser.js'
+import Datauser from '../models/Datauser.js'
 
 const router = express.Router()
 
@@ -79,7 +79,7 @@ router.get('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
   }
 })
 
-// Actualizar datos (completado, misjuegos, wishlist, etc.) de una relación
+// Actualizar datos (completado, misjuegos, wishlist, etc.) 
 router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
   try {
     const { usuarioId, juegoId } = req.params
