@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
   }
 })
 
-// Obtener todos los juegos relacionados a un usuario
+// Obtener estadísticas del usuario
 router.get('/usuario/:usuarioId', async (req, res) => {
   try {
     const data = await Datauser.find({
@@ -55,6 +55,54 @@ router.get('/usuario/:usuarioId', async (req, res) => {
     }).populate('juegoId')
     res.status(200).json(data)
   } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// Obtener estadísticas del usuario
+router.get('/usuario/:usuarioId/stats', async (req, res) => {
+  try {
+    const usuarioId = req.params.usuarioId
+    const data = await Datauser.find({ usuarioId })
+
+    if (!data || data.length === 0) {
+      return res.status(200).json({
+        tiempoActivo: 0,
+        cantidaddeamigos: 0,
+        misionesCompletadas: 0,
+        tesorosDescubiertos: 0,
+        logrosObtenidos: 0,
+        reseñasDadas: 0,
+      })
+    }
+
+    // Sumar los campos de todos los registros
+    const totalTiempo = data.reduce((acc, d) => acc + (d.tiempoActivo || 0), 0)
+    const totalAmigos = data.reduce((acc, d) => acc + (d.amigos || 0), 0)
+    const totalLogros = data.reduce((acc, d) => acc + (d.logrosObtenidos || 0), 0)
+    const totalEaster = data.reduce((acc, d) => acc + (d.easterEggs || 0), 0)
+    const totalCompletados = data.reduce(
+      (acc, d) => acc + (d.juegosCompletadas || 0),
+      0
+    )
+    const totalReseñas = data.reduce(
+      (acc, d) => acc + ((d.interaccion && d.interaccion.length) || 0),
+      0
+    )
+
+    const resumen = {
+      tiempoActivo: totalTiempo,
+      cantidaddeamigos: totalAmigos,
+      misionesCompletadas: totalCompletados,
+      tesorosDescubiertos: totalEaster,
+      logrosObtenidos: totalLogros,
+      reseñasDadas: totalReseñas,
+    }
+
+    res.status(200).json(resumen)
+  } catch (err) {
+    console.error(err)
     res.status(500).json({ error: err.message })
   }
 })
