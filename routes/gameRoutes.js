@@ -17,8 +17,14 @@ router.post('/', async (req, res) => {
 
 //Obtener todo los juegos
 router.get('/', async (req, res) => {
-  const games = await Game.find()
-  res.status(200).json(games)
+  try {
+    const { facilitador } = req.query
+    const filtro = facilitador ? { facilitador } : {}
+    const juegos = await Game.find(filtro).populate('facilitador')
+    res.status(200).json(juegos)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 //Obtener los juegos específica

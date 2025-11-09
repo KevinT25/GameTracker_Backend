@@ -7,6 +7,7 @@ const datauserSchema = new mongoose.Schema({
     { type: mongoose.Schema.Types.ObjectId, ref: 'Achievement' },
   ],
   interaccion: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
+  juegoSubido: [{type: String, default: 'owner' }],
   level: { type: Number, min: 0, max: 80 },
   genero: {type: String },
   karma: { type: Number, min: -80, max: 80 },
