@@ -47,18 +47,72 @@ router.post('/', async (req, res) => {
   }
 })
 
-// Obtener estadísticas del usuario
+// Dar logros
+router.post('/usuario/:usuarioId/logros/:logroId', async (req, res) => {
+  try {
+    const { usuarioId, logroId } = req.params
+
+    // Buscar el registro del usuario
+    let data = await Datauser.findOne({ usuarioId })
+
+    // Si no existe, crear uno nuevo
+    if (!data) {
+      data = new Datauser({ usuarioId, logrosDesbloqueados: [] })
+    }
+
+    // Evitar duplicados
+    if (!data.logrosDesbloqueados.includes(logroId)) {
+      data.logrosDesbloqueados.push(logroId)
+      data.logrosObtenidos = (data.logrosObtenidos || 0) + 1
+      await data.save()
+    }
+
+    // Devolver el documento actualizado con los logros poblados
+    const updatedData = await Datauser.findById(data._id).populate(
+      'logrosDesbloqueados'
+    )
+
+    res.status(200).json(updatedData)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Obtener datos del usuario
 router.get('/usuario/:usuarioId', async (req, res) => {
   try {
     const data = await Datauser.find({
       usuarioId: req.params.usuarioId,
-    }).populate('juegoId')
+    })
+      .populate('juegoId')
+      .populate('logrosDesbloqueados') 
     res.status(200).json(data)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+// Obtener logros del usuario
+router.get('/usuario/:usuarioId/logros', async (req, res) => {
+  try {
+    const data = await Datauser.find({
+      usuarioId: req.params.usuarioId,
+    }).populate('logrosDesbloqueados')
+
+    // Combinar los logros de todos los juegos (si el usuario tiene varios)
+    const logros = data.flatMap((d) => d.logrosDesbloqueados)
+
+    // Evitar duplicados
+    const logrosUnicos = Array.from(
+      new Set(logros.map((l) => l._id.toString()))
+    ).map((id) => logros.find((l) => l._id.toString() === id))
+
+    res.status(200).json(logrosUnicos)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 
 // Obtener estadísticas del usuario
 router.get('/usuario/:usuarioId/stats', async (req, res) => {
