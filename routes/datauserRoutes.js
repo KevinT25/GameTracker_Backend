@@ -93,6 +93,34 @@ router.get('/usuario/:usuarioId', async (req, res) => {
   }
 })
 
+// Actualizar o guardar el género del usuario
+router.put('/usuario/:usuarioId/genero', async (req, res) => {
+  try {
+    const { usuarioId } = req.params
+    const { genero } = req.body
+
+    if (!genero) {
+      return res.status(400).json({ error: 'Debe enviar un género' })
+    }
+
+    // Buscar cualquier registro del usuario
+    let data = await Datauser.findOne({ usuarioId })
+
+    // Si no existe, crear un registro nuevo solo con el género
+    if (!data) {
+      data = new Datauser({ usuarioId, genero })
+    } else {
+      data.genero = genero
+    }
+
+    await data.save()
+    res.status(200).json({ message: 'Género actualizado correctamente', data })
+  } catch (err) {
+    console.error('Error al actualizar género:', err)
+    res.status(500).json({ error: 'Error interno del servidor' })
+  }
+})
+
 // Obtener logros del usuario
 router.get('/usuario/:usuarioId/logros', async (req, res) => {
   try {
