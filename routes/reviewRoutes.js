@@ -1,69 +1,135 @@
 import express from 'express'
 import Review from '../models/Review.js'
+import Datauser from '../models/Datauser.js'
+import Game from '../models/Game.js'
 
 const router = express.Router()
 
-// Crear una reseña
+// 🔹 Crear reseña
 router.post('/', async (req, res) => {
   try {
-    const newReview = new Review(req.body)
-    console.log(req.body)
-    await newReview.save()
-    res.status(201).json(newReview)
+    const {
+      juegoId,
+      usuarioId,
+      puntuacion,
+      textoResenia,
+      horasJugadas,
+      dificultad,
+      recomendaria,
+    } = req.body
+
+    // Verificar existencia del juego y usuario
+    const game = await Game.findById(juegoId)
+    if (!game) return res.status(404).json({ error: 'Juego no encontrado' })
+
+    const dataUser = await Datauser.findOne({ usuarioId, juegoId })
+    if (!dataUser)
+      return res.status(400).json({
+        error: 'El usuario no tiene datos asociados a este juego',
+      })
+
+    // Crear reseña
+    const nueva = new Review({
+      juegoId,
+      usuarioId,
+      puntuacion,
+      textoResenia,
+      horasJugadas,
+      dificultad,
+      recomendaria,
+    })
+
+    await nueva.save()
+
+    // Asociar reseña al dataUser
+    dataUser.interaccion.push(nueva._id)
+    await dataUser.save()
+
+    const reseñaCompleta = await nueva.populate([
+      { path: 'usuarioId', select: 'nombre' },
+      { path: 'juegoId', select: 'titulo' },
+    ])
+
+    res.status(201).json(reseñaCompleta)
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
 })
 
-// Obtener todas las reseñas
+// 🔹 Obtener todas las reseñas (con filtros)
 router.get('/', async (req, res) => {
-  const reviews = await Review.find().populate(
-    'juego',
-    'titulo genero plataforma'
-  )
-  res.status(200).json(reviews)
-})
+  try {
+    const { juego, usuario } = req.query
+    const filtro = {}
+    if (juego) filtro.juegoId = juego
+    if (usuario) filtro.usuarioId = usuario
 
-// Obtener una reseña específica
-router.get('/reviews/:id', async (req, res) => {
-  const review = await Review.findById(req.params.id).populate(
-    'juego',
-    'titulo'
-  )
+    const reviews = await Review.find(filtro)
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
+      .sort({ fechaCreacion: -1 })
 
-  if (!review) {
-    return res.status(404).json({ error: 'Reseña no encontrada' })
+    res.status(200).json(reviews)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-  res.status(200).json(review)
 })
 
-// Eliminar una reseña
+// 🔹 Obtener reseñas de un juego
+router.get('/game/:id', async (req, res) => {
+  try {
+    const reviews = await Review.find({ juegoId: req.params.id })
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
+      .sort({ fechaCreacion: -1 })
+
+    res.status(200).json(reviews)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// 🔹 Eliminar reseña
 router.delete('/reviews/:id', async (req, res) => {
-  const deletedReview = await Review.findByIdAndDelete(req.params.id)
+  try {
+    const review = await Review.findById(req.params.id)
+    if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
 
-  if (!deletedReview) {
-    return res.status(404).json({ error: 'Reseña no encontrada' })
+    // Eliminar relación con Datauser
+    await Datauser.updateOne(
+      { usuarioId: review.usuarioId, juegoId: review.juegoId },
+      { $pull: { interaccion: review._id } }
+    )
+
+    await review.deleteOne()
+    res.status(200).json({ mensaje: 'Reseña eliminada' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-  res.status(200).json(deletedReview)
 })
 
-// Actualizar una reseña
-router.put('/reviews/:id', async (req, res) => {
-  const updatedReview = await Review.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    {
-      new: true,
-    }
-  )
+// 🔹 Responder a una reseña
+router.post('/:id/responder', async (req, res) => {
+  try {
+    const { respuesta, usuarioId } = req.body
+    const review = await Review.findById(req.params.id)
+    if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
 
-  if (!updatedReview) {
-    return res.status(404).json({ error: 'Reseña no encontrada' })
+    review.respuestas.push({
+      texto: respuesta,
+      usuarioId,
+      fecha: new Date(),
+    })
+    await review.save()
+
+    const actualizado = await Review.findById(req.params.id)
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
+      .lean()
+    res.status(200).json(actualizado)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-  res.status(200).json(updatedReview)
 })
 
 export default router

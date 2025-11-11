@@ -59,29 +59,4 @@ router.put('/achievements/:id', async (req, res) => {
   res.status(200).json(updatedAchievement)
 })
 
-// Asignar un logro a un usuario
-router.post('/:userId/add', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId)
-    const { achievementId } = req.body
-
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' })
-    const achievement = await Achievement.findById(achievementId)
-    if (!achievement)
-      return res.status(404).json({ error: 'Logro no encontrado' })
-
-    // Evitar duplicados
-    if (user.logros.includes(achievementId)) {
-      return res.status(400).json({ error: 'El usuario ya tiene este logro' })
-    }
-
-    user.logros.push(achievementId)
-    await user.save()
-
-    res.status(200).json({ message: 'Logro asignado al usuario', user })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
 export default router
