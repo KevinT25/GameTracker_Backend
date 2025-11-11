@@ -32,6 +32,7 @@ router.post('/', async (req, res) => {
     const nueva = new Review({
       juegoId,
       usuarioId,
+      nombreUsuario: dataUser.nombre,
       puntuacion,
       textoResenia,
       horasJugadas,

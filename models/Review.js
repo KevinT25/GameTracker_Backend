@@ -1,9 +1,12 @@
 import mongoose from 'mongoose'
 
-const reviewSchema = new mongoose.Schema({
+const reviewSchema = new new mongoose.Schema({
   juegoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Game' },
   usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  puntuacion: { type: Number, min: 0, max: 100 },
+  // Esto permite almacenar el nombre del usuario al momento de la reseña
+  nombreUsuario: { type: String },
+  // 🌟 CAMBIO CLAVE: Puntuación de 1 a 5 estrellas
+  puntuacion: { type: Number, min: 1, max: 5, required: true }, 
   textoResenia: { type: String },
   horasJugadas: { type: Number, default: 0 },
   dificultad: { type: String },
