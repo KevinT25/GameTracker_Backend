@@ -11,23 +11,25 @@ router.post('/', async (req, res) => {
       juegoId,
       completado,
       misjuegos,
-      wishlist, 
+      wishlist,
       horasJugadas,
       karma,
       level,
     } = req.body
-
     let data = await Datauser.findOne({ usuarioId, juegoId })
+
     if (data) {
-      data.completado = completado ?? data.completado
-      data.misjuegos = misjuegos ?? data.misjuegos
-      data.wishlist = wishlist ?? data.wishlist 
-      data.horasJugadas = horasJugadas ?? data.horasJugadas
-      data.karma = karma ?? data.karma
-      data.level = level ?? data.level
+      Object.assign(data, {
+        completado: completado ?? data.completado,
+        misjuegos: misjuegos ?? data.misjuegos,
+        wishlist: wishlist ?? data.wishlist,
+        horasJugadas: horasJugadas ?? data.horasJugadas,
+        karma: karma ?? data.karma,
+        level: level ?? data.level,
+      })
       await data.save()
       return res.status(200).json(data)
-    } // Si no existe, se crea una nueva relación
+    }
 
     const newData = new Datauser({
       usuarioId,
@@ -51,34 +53,24 @@ router.post('/', async (req, res) => {
 router.post('/usuario/:usuarioId/logros/:logroId', async (req, res) => {
   try {
     const { usuarioId, logroId } = req.params
-
-    // Buscar el registro del usuario
     let data = await Datauser.findOne({ usuarioId })
+    if (!data) data = new Datauser({ usuarioId, logrosDesbloqueados: [] })
 
-    // Si no existe, crear uno nuevo
-    if (!data) {
-      data = new Datauser({ usuarioId, logrosDesbloqueados: [] })
-    }
-
-    // Evitar duplicados
     if (!data.logrosDesbloqueados.includes(logroId)) {
       data.logrosDesbloqueados.push(logroId)
       data.logrosObtenidos = (data.logrosObtenidos || 0) + 1
       await data.save()
     }
 
-    // Devolver el documento actualizado con los logros poblados
     const updatedData = await Datauser.findById(data._id).populate(
       'logrosDesbloqueados'
     )
-
     res.status(200).json({
       message: 'Logro desbloqueado correctamente',
       logrosDesbloqueados: updatedData.logrosDesbloqueados,
       total: updatedData.logrosObtenidos,
     })
   } catch (err) {
-    console.error(err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -90,7 +82,7 @@ router.get('/usuario/:usuarioId', async (req, res) => {
       usuarioId: req.params.usuarioId,
     })
       .populate('juegoId')
-      .populate('logrosDesbloqueados') 
+      .populate('logrosDesbloqueados')
     res.status(200).json(data)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -138,7 +130,10 @@ router.get('/usuario/:usuarioId/stats', async (req, res) => {
     // Sumar los campos de todos los registros
     const totalTiempo = data.reduce((acc, d) => acc + (d.tiempoActivo || 0), 0)
     const totalAmigos = data.reduce((acc, d) => acc + (d.amigos || 0), 0)
-    const totalLogros = data.reduce((acc, d) => acc + (d.logrosObtenidos || 0), 0)
+    const totalLogros = data.reduce(
+      (acc, d) => acc + (d.logrosObtenidos || 0),
+      0
+    )
     const totalEaster = data.reduce((acc, d) => acc + (d.easterEggs || 0), 0)
     const totalCompletados = data.reduce(
       (acc, d) => acc + (d.juegosCompletadas || 0),
@@ -213,7 +208,7 @@ router.put('/usuario/:usuarioId/genero', async (req, res) => {
   }
 })
 
-// Actualizar datos (completado, misjuegos, wishlist, etc.) 
+// Actualizar datos (completado, misjuegos, wishlist, etc.)
 router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
   try {
     const { usuarioId, juegoId } = req.params
@@ -222,7 +217,7 @@ router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
     const data = await Datauser.findOneAndUpdate(
       { usuarioId, juegoId },
       { $set: updateFields },
-      { new: true, upsert: true } 
+      { new: true, upsert: true }
     )
 
     res.status(200).json(data)

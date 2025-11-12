@@ -12,6 +12,7 @@ router.post('/', async (req, res) => {
       juegoId,
       usuarioId,
       puntuacion,
+      nombreUsuario,
       textoResenia,
       horasJugadas,
       dificultad,
@@ -32,7 +33,7 @@ router.post('/', async (req, res) => {
     const nueva = new Review({
       juegoId,
       usuarioId,
-      nombreUsuario: dataUser.nombre,
+      nombreUsuario,
       puntuacion,
       textoResenia,
       horasJugadas,
@@ -43,13 +44,14 @@ router.post('/', async (req, res) => {
     await nueva.save()
 
     // Asociar reseña al dataUser
-    dataUser.interaccion.push(nueva._id)
-    await dataUser.save()
+    if (!dataUser.interaccion.includes(nueva._id)) {
+      dataUser.interaccion.push(nueva._id)
+      await dataUser.save()
+    }
 
-    const reseñaCompleta = await nueva.populate([
-      { path: 'usuarioId', select: 'nombre' },
-      { path: 'juegoId', select: 'titulo' },
-    ])
+    const reseñaCompleta = await Review.findById(nueva._id)
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
 
     res.status(201).json(reseñaCompleta)
   } catch (err) {
@@ -76,7 +78,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-// 🔹 Obtener reseñas de un juego
+// 🔹 Obtener reseñas de un juego específico
 router.get('/game/:id', async (req, res) => {
   try {
     const reviews = await Review.find({ juegoId: req.params.id })
@@ -91,7 +93,7 @@ router.get('/game/:id', async (req, res) => {
 })
 
 // 🔹 Eliminar reseña
-router.delete('/reviews/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const review = await Review.findById(req.params.id)
     if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
@@ -109,10 +111,13 @@ router.delete('/reviews/:id', async (req, res) => {
   }
 })
 
-// 🔹 Responder a una reseña
+// 🔹 Agregar respuesta a una reseña
 router.post('/:id/responder', async (req, res) => {
   try {
     const { respuesta, usuarioId } = req.body
+    if (!respuesta || !usuarioId)
+      return res.status(400).json({ error: 'Faltan datos' })
+
     const review = await Review.findById(req.params.id)
     if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
 
@@ -126,7 +131,8 @@ router.post('/:id/responder', async (req, res) => {
     const actualizado = await Review.findById(req.params.id)
       .populate('usuarioId', 'nombre')
       .populate('juegoId', 'titulo')
-      .lean()
+      .populate('respuestas.usuarioId', 'nombre')
+
     res.status(200).json(actualizado)
   } catch (err) {
     res.status(500).json({ error: err.message })

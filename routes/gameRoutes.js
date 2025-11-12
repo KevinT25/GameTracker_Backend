@@ -6,8 +6,44 @@ const router = express.Router()
 // Subir un juego
 router.post('/', async (req, res) => {
   try {
-    const newGame = new Game(req.body) 
-    console.log(req.body)
+    const {
+      facilitador,
+      titulo,
+      genero,
+      plataforma,
+      anioLanzamiento,
+      clasificacionEdad,
+      desarrollador,
+      imagenPortada,
+      descripcion,
+    } = req.body
+
+    // Validación básica
+    if (
+      !facilitador ||
+      !titulo ||
+      !genero ||
+      !plataforma ||
+      !anioLanzamiento ||
+      !clasificacionEdad ||
+      !desarrollador ||
+      !imagenPortada
+    ) {
+      return res.status(400).json({ error: 'Faltan datos obligatorios' })
+    }
+
+    const newGame = new Game({
+      facilitador,
+      titulo,
+      genero,
+      plataforma,
+      anioLanzamiento,
+      clasificacionEdad,
+      desarrollador,
+      imagenPortada,
+      descripcion,
+    })
+
     await newGame.save()
     res.status(201).json(newGame)
   } catch (err) {
@@ -15,48 +51,71 @@ router.post('/', async (req, res) => {
   }
 })
 
-//Obtener todo los juegos
+// Obtener todos los juegos (opcionalmente filtrados por facilitador)
 router.get('/', async (req, res) => {
   try {
     const { facilitador } = req.query
     const filtro = facilitador ? { facilitador } : {}
-    const juegos = await Game.find(filtro).populate('facilitador')
+
+    const juegos = await Game.find(filtro)
+      .populate('facilitador', 'nombre email') // Mostrar info del usuario
+      .sort({ fechaCreacion: -1 })
+
     res.status(200).json(juegos)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-//Obtener los juegos específica
+// Obtener un juego específico
 router.get('/games/:id', async (req, res) => {
-  const game = await Game.findById(req.params.id)
+  try {
+    const game = await Game.findById(req.params.id).populate(
+      'facilitador',
+      'nombre email'
+    )
 
-  if (!game) {
-    return res.status(404).json({ error: 'Juego no encontrado' })
+    if (!game) {
+      return res.status(404).json({ error: 'Juego no encontrado' })
+    }
+
+    res.status(200).json(game)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-  res.status(200).json(game)
 })
 
 // Eliminar un juego
 router.delete('/games/:id', async (req, res) => {
-  const deletedGame = await Game.findByIdAndDelete(req.params.id)
+  try {
+    const deletedGame = await Game.findByIdAndDelete(req.params.id)
 
-  if (!deletedGame) {
-    return res.status(404).json({ error: 'Juego no encontrado' })
+    if (!deletedGame) {
+      return res.status(404).json({ error: 'Juego no encontrado' })
+    }
+
+    res.status(200).json({ mensaje: 'Juego eliminado correctamente' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-  res.status(200).json(deletedGame)
 })
 
 // Actualizar un juego
 router.put('/games/:id', async (req, res) => {
-  const updatedGame = await Game.findByIdAndUpdate(req.params.id, req.body)
+  try {
+    const updatedGame = await Game.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    })
 
-  if (!updatedGame) {
-    return res.status(404).json({ error: 'Juego no encontrado' })
+    if (!updatedGame) {
+      return res.status(404).json({ error: 'Juego no encontrado' })
+    }
+
+    res.status(200).json(updatedGame)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
   }
-
-  res.status(200).json(updatedGame)
 })
 
 export default router

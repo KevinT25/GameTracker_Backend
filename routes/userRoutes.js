@@ -5,12 +5,10 @@ const router = express.Router()
 // Registro
 router.post('/', async (req, res) => {
   const { nombre, email, contrasenia } = req.body
-
   try {
     const existingUser = await User.findOne({ email })
-    if (existingUser) {
+    if (existingUser)
       return res.status(400).json({ error: 'El usuario ya existe' })
-    }
 
     const newUser = new User({ nombre, email, contrasenia })
     await newUser.save()
@@ -21,26 +19,21 @@ router.post('/', async (req, res) => {
       email: newUser.email,
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error('Error en registro:', err)
+    res.status(500).json({ error: 'Error al registrar el usuario' })
   }
 })
 
-//Login
+// Login
 router.post('/login', async (req, res) => {
   const { email, contrasenia } = req.body
-
   try {
     const user = await User.findOne({ email })
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' })
 
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' })
-    }
-
-    if (user.contrasenia !== contrasenia) {
+    if (user.contrasenia !== contrasenia)
       return res.status(401).json({ error: 'Contraseña incorrecta' })
-    }
 
-    // Login exitoso
     res.status(200).json({
       message: 'Inicio de sesión exitoso',
       user: {
@@ -57,43 +50,49 @@ router.post('/login', async (req, res) => {
 
 // Obtener todos los usuarios
 router.get('/', async (req, res) => {
-  const users = await User.find()
-  res.status(200).json(users)
+  try {
+    const users = await User.find()
+    res.status(200).json(users)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 // Obtener un usuario específico
 router.get('/users/:id', async (req, res) => {
-  const user = await User.findById(req.params.id)
-
-  if (!user) {
-    return res.status(404).json({ error: 'Usuario no encontrado' })
+  try {
+    const user = await User.findById(req.params.id)
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' })
+    res.status(200).json(user)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-  res.status(200).json(user)
 })
 
 // Eliminar un usuario
 router.delete('/users/:id', async (req, res) => {
-  const deletedUser = await User.findByIdAndDelete(req.params.id)
-
-  if (!deletedUser) {
-    return res.status(404).json({ error: 'Usuario no encontrado' })
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id)
+    if (!deletedUser)
+      return res.status(404).json({ error: 'Usuario no encontrado' })
+    res.status(200).json(deletedUser)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-  res.status(200).json(deletedUser)
 })
 
-// Actualizar un usuario
+// 🔹 Actualizar un usuario
 router.put('/users/:id', async (req, res) => {
-  const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-  })
-
-  if (!updatedUser) {
-    return res.status(404).json({ error: 'Usuario no encontrado' })
+  try {
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    })
+    if (!updatedUser)
+      return res.status(404).json({ error: 'Usuario no encontrado' })
+    res.status(200).json(updatedUser)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-  res.status(200).json(updatedUser)
 })
 
 export default router

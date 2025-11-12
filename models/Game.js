@@ -6,15 +6,14 @@ const gameSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-
-  titulo: { type: String, required: true },
-  genero: { type: String, required: true },
-  plataforma: { type: String, required: true },
+  titulo: { type: String, required: true, trim: true },
+  genero: { type: String, required: true, trim: true },
+  plataforma: { type: String, required: true, trim: true },
   anioLanzamiento: { type: Number, required: true },
-  clasificacionEdad: { type: String, required: true },
-  desarrollador: { type: String, required: true },
-  imagenPortada: { type: String, required: true },
-  descripcion: { type: String, default: 'Comienza tu aventura' },
+  clasificacionEdad: { type: String, required: true, trim: true },
+  desarrollador: { type: String, required: true, trim: true },
+  imagenPortada: { type: String, required: true, trim: true },
+  descripcion: { type: String, default: 'Comienza tu aventura', trim: true },
   fechaCreacion: { type: Date, default: Date.now },
 })
 
