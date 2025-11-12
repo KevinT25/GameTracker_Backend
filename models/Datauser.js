@@ -1,21 +1,20 @@
 import mongoose from 'mongoose'
 
 const datauserSchema = new mongoose.Schema({
-  usuarioId: {
-    type: mongoose.Schema.Types.ObjectId,
+  usuarioId: { 
+    type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
     required: true,
   },
-  juegoId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Game',
-    required: true,
+  juegoId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Game', 
   },
   logrosDesbloqueados: [
     { type: mongoose.Schema.Types.ObjectId, ref: 'Achievement' },
   ],
   interaccion: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
-  juegoSubido: { type: String, default: 'owner' },
+  juegoSubido: [{ type: String, default: 'owner' }],
   horasJugadas: { type: Number, default: 0 },
   level: { type: Number, min: 0, max: 80, default: 0 },
   genero: { type: String, default: '' },
