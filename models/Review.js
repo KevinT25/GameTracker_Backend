@@ -12,7 +12,7 @@ const reviewSchema = new mongoose.Schema({
     required: true,
   },
   nombreUsuario: { type: String, required: true },
-  puntuacion: { type: Number, min: 1, max: 5, required: true },
+  puntuacion: { type: Number, min: 0, max: 5, required: true },
   textoResenia: { type: String, trim: true },
   horasJugadas: { type: Number, default: 0 },
   dificultad: { type: String },

@@ -1,5 +1,8 @@
 import express from 'express'
 import User from '../models/User.js'
+import Datauser from '../models/Datauser.js'
+import { procesarLogrosAutomaticos } from '../controllers/condicioneslogro.js'
+
 const router = express.Router()
 
 // Registro
@@ -33,6 +36,21 @@ router.post('/login', async (req, res) => {
 
     if (user.contrasenia !== contrasenia)
       return res.status(401).json({ error: 'Contraseña incorrecta' })
+
+    // Buscar su Datauser
+    let data = await Datauser.findOne({ usuarioId: user._id })
+
+    if (!data) {
+      data = new Datauser({ usuarioId: user._id })
+    }
+
+    // Incrementar contador de inicios de sesión
+    data.loginCount = (data.loginCount || 0) + 1
+
+    await data.save()
+
+    // Evaluar logros correspondientes al login
+    await procesarLogrosAutomaticos(user._id, 'login')
 
     res.status(200).json({
       message: 'Inicio de sesión exitoso',

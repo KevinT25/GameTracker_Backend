@@ -9,6 +9,7 @@ import datauserRoutes from './routes/datauserRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import achievementRoutes from './routes/achievementRoutes.js'
 import noticeRoutes from './routes/noticeRoutes.js'
+import logrosRoutes from './routes/logrosRoutes.js'
 
 // Inicializar app
 const app = express() 
@@ -35,6 +36,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/achievements', achievementRoutes)
 app.use('/api/dataUser', datauserRoutes)
 app.use('/api/noticias', noticeRoutes)
+app.use('/api', logrosRoutes)
 
 // Servidor 
 app.listen(port, () => {

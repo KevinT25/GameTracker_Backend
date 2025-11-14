@@ -49,32 +49,6 @@ router.post('/', async (req, res) => {
   }
 })
 
-// Dar logros
-router.post('/usuario/:usuarioId/logros/:logroId', async (req, res) => {
-  try {
-    const { usuarioId, logroId } = req.params
-    let data = await Datauser.findOne({ usuarioId })
-    if (!data) data = new Datauser({ usuarioId, logrosDesbloqueados: [] })
-
-    if (!data.logrosDesbloqueados.includes(logroId)) {
-      data.logrosDesbloqueados.push(logroId)
-      data.logrosObtenidos = (data.logrosObtenidos || 0) + 1
-      await data.save()
-    }
-
-    const updatedData = await Datauser.findById(data._id).populate(
-      'logrosDesbloqueados'
-    )
-    res.status(200).json({
-      message: 'Logro desbloqueado correctamente',
-      logrosDesbloqueados: updatedData.logrosDesbloqueados,
-      total: updatedData.logrosObtenidos,
-    })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
 // Obtener datos del usuario
 router.get('/usuario/:usuarioId', async (req, res) => {
   try {
@@ -84,27 +58,6 @@ router.get('/usuario/:usuarioId', async (req, res) => {
       .populate('juegoId')
       .populate('logrosDesbloqueados')
     res.status(200).json(data)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// Obtener logros del usuario
-router.get('/usuario/:usuarioId/logros', async (req, res) => {
-  try {
-    const data = await Datauser.find({
-      usuarioId: req.params.usuarioId,
-    }).populate('logrosDesbloqueados')
-
-    // Combinar los logros de todos los juegos (si el usuario tiene varios)
-    const logros = data.flatMap((d) => d.logrosDesbloqueados)
-
-    // Evitar duplicados
-    const logrosUnicos = Array.from(
-      new Set(logros.map((l) => l._id.toString()))
-    ).map((id) => logros.find((l) => l._id.toString() === id))
-
-    res.status(200).json(logrosUnicos)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -177,6 +130,23 @@ router.get('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
     res.status(200).json(data)
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// Obtener el género del usuario
+router.get('/usuario/:usuarioId/genero', async (req, res) => {
+  try {
+    const { usuarioId } = req.params
+    const data = await Datauser.findOne({ usuarioId })
+
+    if (!data || !data.genero) {
+      return res.status(200).json({ genero: null })
+    }
+
+    res.status(200).json({ genero: data.genero })
+  } catch (err) {
+    console.error('Error al obtener género:', err)
+    res.status(500).json({ error: 'Error interno del servidor' })
   }
 })
 
