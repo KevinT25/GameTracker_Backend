@@ -95,41 +95,42 @@ router.get('/usuario/:usuarioId/stats', async (req, res) => {
         tiempoActivo: 0,
         cantidaddeamigos: 0,
         misionesCompletadas: 0,
-        tesorosDescubiertos: 0,
         logrosObtenidos: 0,
         reseñasDadas: 0,
+        xp: 0,
+        level: 0,
       })
     }
 
-    // Sumar los campos de todos los registros
     const totalTiempo = data.reduce((acc, d) => acc + (d.tiempoActivo || 0), 0)
-    const totalAmigos = data.reduce((acc, d) => acc + (d.amigos || 0), 0)
+    const totalAmigos = 0 // pendiente de usar amigos
     const totalLogros = data.reduce(
       (acc, d) => acc + (d.logrosObtenidos || 0),
       0
     )
-    const totalEaster = data.reduce((acc, d) => acc + (d.easterEggs || 0), 0)
     const totalCompletados = data.reduce(
       (acc, d) => acc + (d.juegosCompletadas || 0),
       0
     )
     const totalReseñas = data.reduce(
-      (acc, d) => acc + ((d.interaccion && d.interaccion.length) || 0),
+      (acc, d) => acc + (d.interaccion?.length || 0),
       0
     )
+    const totalXP = data.reduce((acc, d) => acc + (d.xp || 0), 0)
 
-    const resumen = {
+    const level =
+      totalTiempo + totalAmigos + totalLogros + totalCompletados + totalReseñas
+
+    res.status(200).json({
       tiempoActivo: totalTiempo,
       cantidaddeamigos: totalAmigos,
       misionesCompletadas: totalCompletados,
-      tesorosDescubiertos: totalEaster,
       logrosObtenidos: totalLogros,
       reseñasDadas: totalReseñas,
-    }
-
-    res.status(200).json(resumen)
+      xp: totalXP,
+      level,
+    })
   } catch (err) {
-    console.error(err)
     res.status(500).json({ error: err.message })
   }
 })
@@ -140,24 +141,55 @@ router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
     const { usuarioId, juegoId } = req.params
     const updateFields = req.body
 
+    const dataActual = await Datauser.findOne({ usuarioId, juegoId })
+
+    const antesCompletado = dataActual?.completado || false
+  //  const antesMisJuegos = dataActual?.misjuegos || false
+    const antesWishlist = dataActual?.wishlist || false
+
+    // Actualizar campos
     const data = await Datauser.findOneAndUpdate(
       { usuarioId, juegoId },
       { $set: updateFields },
       { new: true, upsert: true }
     )
-    //Logro añadir a mis juegos
+
     if (updateFields.misjuegos === true) {
+      // Verificar si ya tiene el logro de "misJuegos" global
+      const yaTieneLogro = await Datauser.exists({
+        usuarioId,
+        logrosDesbloqueados: '69177c9b2cd27f6edfac7a36', 
+      })
+
+      if (!yaTieneLogro) {
+        await procesarLogrosAutomaticos(
+          usuarioId,
+          'misJuegos',
+          juegoId,
+          updateFields
+        )
+      }
+    }
+
+    // Logro wishlist
+    if (updateFields.wishlist === true && !antesWishlist) {
       await procesarLogrosAutomaticos(
         usuarioId,
-        'misJuegos',
+        'wishlist',
         juegoId,
         updateFields
       )
     }
-    //Logro subir de nivel
-    if (updateFields.level !== undefined) {
-      await procesarLogrosAutomaticos(usuarioId, 'subirNivel', null, {
-        level: updateFields.level,
+
+    // Solo contar "completado" si cambió de false -> true
+    if (updateFields.completado === true && !antesCompletado) {
+      await Datauser.updateOne(
+        { usuarioId, juegoId },
+        { $inc: { juegosCompletadas: 1 } }
+      )
+
+      await procesarLogrosAutomaticos(usuarioId, 'juegoCompletado', juegoId, {
+        totalCompletados: (dataActual?.juegosCompletadas || 0) + 1,
       })
     }
 
