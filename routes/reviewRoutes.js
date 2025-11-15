@@ -50,16 +50,18 @@ router.post('/', async (req, res) => {
       await dataUser.save()
     }
 
-    // Logro por NUEVA reseña
-    await procesarLogrosAutomaticos(usuarioId, 'nuevaReseña')
-
     // Obtener estadísticas del usuario desde Datauser
     const statsRes = await fetch(
       `http://localhost:3000/api/dataUser/usuario/${usuarioId}/stats`
     )
     const stats = await statsRes.json()
 
-    const totalResenas = stats.reseñasDadas || 0 
+    const totalResenas = stats.reseñasDadas || 0
+
+    // Logro por NUEVA reseña
+    await procesarLogrosAutomaticos(usuarioId, 'nuevaResena', null, {
+      totalResenas,
+    })
 
     // Logro por 10 reseñas usando totalResenas
     await procesarLogrosAutomaticos(usuarioId, 'muchaResena', null, {
@@ -92,8 +94,15 @@ router.post('/:id/responder', async (req, res) => {
     review.respuestas.push({ texto: respuesta, usuarioId, fecha: new Date() })
     await review.save()
 
-    // Desbloquear logro de "Consejero Real"
-    await procesarLogrosAutomaticos(usuarioId, 'respuestaComentario')
+    // 🔥 Contar cuántas respuestas ha hecho el usuario en TODAS las reseñas
+    const respuestasTotales = await Review.countDocuments({
+      'respuestas.usuarioId': usuarioId,
+    })
+
+    // LOGRO: Responder comentario (pasamos respuestasTotales)
+    await procesarLogrosAutomaticos(usuarioId, 'respuestaComentario', null, {
+      respuestasTotales,
+    })
 
     // Populate consistente
     const actualizado = await Review.findById(req.params.id)

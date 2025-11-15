@@ -8,14 +8,26 @@ const reglasLogros = {
     condicion: () => true,
   },
 
+  'Lobo fiel': {
+    evento: 'login',
+    condicion: (data) => data.loginCount >= 7,
+  },
+
   'Eco del Héroe Caído': {
-    evento: 'nuevaReseña',
-    condicion: (data) => (data.interaccion?.length || 0) >= 1,
+    evento: 'nuevaResena',
+    condicion: (data) =>
+      (data.totalResenas || data.extra?.totalResenas || 0) >= 1,
   },
 
   'Sabiduría del Archivo Perdido': {
     evento: 'muchaResena',
-    condicion: (data) => (data.totalResenas || 0) >= 10,
+    condicion: (data) =>
+      (data.totalResenas || data.extra?.totalResenas || 0) >= 5,
+  },
+
+  'Consejero Real': {
+    evento: 'respuestaComentario',
+    condicion: (data) => (data.respuestasTotales || 0) >= 1,
   },
 
   'Jugador principiante': {
@@ -33,26 +45,10 @@ const reglasLogros = {
     condicion: (data) => data.level >= 80,
   },
 
-  'Consejero Real': {
-    evento: 'respuestaComentario',
-    condicion: (data) => (data.interaccion?.length || 0) >= 1,
-  },
-
-  'Lobo fiel': {
-    evento: 'login',
-    condicion: (data) => data.loginCount >= 7,
-  },
-
   'Coleccionista de aventuras': {
     evento: 'misJuegos',
     condicion: (data) => data.misjuegos === true,
-  },
-
-  'Coleccionador de logros': {
-    evento: 'evaluar',
-    condicion: (data, totalLogros) =>
-      data.logrosDesbloqueados.length === totalLogros - 1,
-  },
+  }
 }
 
 export const procesarLogrosAutomaticos = async (
@@ -63,7 +59,7 @@ export const procesarLogrosAutomaticos = async (
 ) => {
   try {
     const filtro = juegoId ? { usuarioId, juegoId } : { usuarioId }
-    const data = await Datauser.findOne(filtro)
+    let data = await Datauser.findOne(filtro)
 
     if (!data) return
 
@@ -81,19 +77,14 @@ export const procesarLogrosAutomaticos = async (
 
       if (data.logrosDesbloqueados.includes(logro._id)) continue
 
-      const cumple =
-        logro.nombre === 'Coleccionador de logros'
-          ? regla.condicion({ ...data.toObject(), ...dataExtra }, logros.length)
-          : regla.condicion({ ...data.toObject(), ...dataExtra })
+      const cumple = regla.condicion({ ...data.toObject(), ...dataExtra })
 
       if (cumple) {
         data.logrosDesbloqueados.push(logro._id)
       }
     }
 
-    // Actualiza el total
     data.logrosObtenidos = data.logrosDesbloqueados.length
-
     await data.save()
   } catch (err) {
     console.error('❌ Error verificando logros automáticos:', err)

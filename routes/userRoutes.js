@@ -16,6 +16,16 @@ router.post('/', async (req, res) => {
     const newUser = new User({ nombre, email, contrasenia })
     await newUser.save()
 
+    //Logro loguerarse por primera vez
+    const data = new Datauser({
+      usuarioId: newUser._id,
+      loginCount: 1,
+      logrosDesbloqueados: [],
+    })
+    await data.save()
+
+    await procesarLogrosAutomaticos(newUser._id, 'login')
+
     res.status(201).json({
       id: newUser._id,
       nombre: newUser.nombre,
@@ -37,19 +47,17 @@ router.post('/login', async (req, res) => {
     if (user.contrasenia !== contrasenia)
       return res.status(401).json({ error: 'Contraseña incorrecta' })
 
-    // Buscar su Datauser
+    // Buscar datauser
     let data = await Datauser.findOne({ usuarioId: user._id })
 
     if (!data) {
-      data = new Datauser({ usuarioId: user._id })
+      data = new Datauser({ usuarioId: user._id, loginCount: 0 })
     }
 
-    // Incrementar contador de inicios de sesión
+    //Logro inicia sesion 7 dia seguidos
     data.loginCount = (data.loginCount || 0) + 1
-
     await data.save()
 
-    // Evaluar logros correspondientes al login
     await procesarLogrosAutomaticos(user._id, 'login')
 
     res.status(200).json({

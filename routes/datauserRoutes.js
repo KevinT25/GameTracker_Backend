@@ -1,5 +1,6 @@
 import express from 'express'
 import Datauser from '../models/Datauser.js'
+import { procesarLogrosAutomaticos } from '../controllers/condicioneslogro.js'
 
 const router = express.Router()
 
@@ -63,6 +64,26 @@ router.get('/usuario/:usuarioId', async (req, res) => {
   }
 })
 
+// Obtener un juego específico de un usuario
+router.get('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
+  try {
+    const data = await Datauser.findOne({
+      usuarioId: req.params.usuarioId,
+      juegoId: req.params.juegoId,
+    }).populate('juegoId')
+
+    if (!data) {
+      return res
+        .status(404)
+        .json({ error: 'No se encontró relación usuario-juego' })
+    }
+
+    res.status(200).json(data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // Obtener estadísticas del usuario
 router.get('/usuario/:usuarioId/stats', async (req, res) => {
   try {
@@ -113,18 +134,31 @@ router.get('/usuario/:usuarioId/stats', async (req, res) => {
   }
 })
 
-// Obtener un juego específico de un usuario
-router.get('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
+// Actualizar datos (completado, misjuegos, wishlist, etc.)
+router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
   try {
-    const data = await Datauser.findOne({
-      usuarioId: req.params.usuarioId,
-      juegoId: req.params.juegoId,
-    }).populate('juegoId')
+    const { usuarioId, juegoId } = req.params
+    const updateFields = req.body
 
-    if (!data) {
-      return res
-        .status(404)
-        .json({ error: 'No se encontró relación usuario-juego' })
+    const data = await Datauser.findOneAndUpdate(
+      { usuarioId, juegoId },
+      { $set: updateFields },
+      { new: true, upsert: true }
+    )
+    //Logro añadir a mis juegos
+    if (updateFields.misjuegos === true) {
+      await procesarLogrosAutomaticos(
+        usuarioId,
+        'misJuegos',
+        juegoId,
+        updateFields
+      )
+    }
+    //Logro subir de nivel
+    if (updateFields.level !== undefined) {
+      await procesarLogrosAutomaticos(usuarioId, 'subirNivel', null, {
+        level: updateFields.level,
+      })
     }
 
     res.status(200).json(data)
@@ -175,24 +209,6 @@ router.put('/usuario/:usuarioId/genero', async (req, res) => {
   } catch (err) {
     console.error('Error al actualizar género:', err)
     res.status(500).json({ error: 'Error interno del servidor' })
-  }
-})
-
-// Actualizar datos (completado, misjuegos, wishlist, etc.)
-router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
-  try {
-    const { usuarioId, juegoId } = req.params
-    const updateFields = req.body
-
-    const data = await Datauser.findOneAndUpdate(
-      { usuarioId, juegoId },
-      { $set: updateFields },
-      { new: true, upsert: true }
-    )
-
-    res.status(200).json(data)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
   }
 })
 
