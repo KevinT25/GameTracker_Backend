@@ -1,5 +1,6 @@
 import express from 'express'
 import Datauser from '../models/Datauser.js'
+import Users from '../models/User.js'
 import { procesarLogrosAutomaticos } from '../controllers/condicioneslogro.js'
 
 const router = express.Router()
@@ -64,6 +65,45 @@ router.get('/usuario/:usuarioId', async (req, res) => {
   }
 })
 
+// Crear amigos
+router.post('/usuario/:usuarioId/anadir-amigo/:amigoId', async (req, res) => {
+  try {
+    const { usuarioId, amigoId } = req.params
+
+    if (usuarioId === amigoId) {
+      return res.status(400).json({ message: 'No puedes agregarte a ti mismo' })
+    }
+
+    const usuarioData = await Datauser.findOne({ usuarioId })
+    const amigo = await Users.findById(amigoId)
+
+    if (!usuarioData || !amigo) {
+      return res.status(404).json({ message: 'Usuario o amigo no encontrado' })
+    }
+
+    if (usuarioData.amigos.includes(amigoId)) {
+      return res.status(400).json({ message: 'Ya son amigos' })
+    }
+
+    usuarioData.amigos.push(amigoId)
+    usuarioData.cantidadamigos = usuarioData.amigos.length // actualizar contador
+    await usuarioData.save()
+
+    const usuarioDat = await Datauser.findOne({ usuarioId }).populate(
+      'amigos',
+      'nombre email'
+    )
+
+    res.status(200).json({
+      message: 'Amigo agregado exitosamente',
+      cantidadamigos: usuarioDat.cantidadamigos,
+      amigos: usuarioDat.amigos,
+    })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
 // Obtener un juego específico de un usuario
 router.get('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
   try {
@@ -102,8 +142,9 @@ router.get('/usuario/:usuarioId/stats', async (req, res) => {
       })
     }
 
+    const usuarioData = await Datauser.findOne({ usuarioId })
+    const totalAmigos = usuarioData?.cantidadamigos || 0
     const totalTiempo = data.reduce((acc, d) => acc + (d.tiempoActivo || 0), 0)
-    const totalAmigos = 0 // pendiente de usar amigos
     const totalLogros = data.reduce(
       (acc, d) => acc + (d.logrosObtenidos || 0),
       0
@@ -144,7 +185,7 @@ router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
     const dataActual = await Datauser.findOne({ usuarioId, juegoId })
 
     const antesCompletado = dataActual?.completado || false
-  //  const antesMisJuegos = dataActual?.misjuegos || false
+    //  const antesMisJuegos = dataActual?.misjuegos || false
     const antesWishlist = dataActual?.wishlist || false
 
     // Actualizar campos
@@ -158,7 +199,7 @@ router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
       // Verificar si ya tiene el logro de "misJuegos" global
       const yaTieneLogro = await Datauser.exists({
         usuarioId,
-        logrosDesbloqueados: '69177c9b2cd27f6edfac7a36', 
+        logrosDesbloqueados: '69177c9b2cd27f6edfac7a36',
       })
 
       if (!yaTieneLogro) {
