@@ -65,6 +65,78 @@ export const obtenerLogrosUsuario = async (req, res) => {
   }
 }
 
+export const obtenerMiLogros = async (req, res) => {
+  try {
+    const { usuarioId } = req.params
+
+    // Obtener todos los registros del usuario (puede haber varios)
+    const data = await Datauser.find({ usuarioId }).populate(
+      'logrosDesbloqueados'
+    )
+
+    // Aplanar todos los logros desbloqueados
+    const logros = data.flatMap((d) => d.logrosDesbloqueados)
+
+    // Eliminar duplicados
+    const logrosUnicos = Array.from(
+      new Set(logros.map((l) => l._id.toString()))
+    ).map((id) => logros.find((l) => l._id.toString() === id))
+
+    // Obtener el logro seleccionado (tomando SIEMPRE el registro más reciente)
+    const registroMasReciente = await Datauser.findOne({ usuarioId }).sort({
+      createdAt: -1,
+    })
+
+    const seleccionado = registroMasReciente?.miLogro || null
+
+    // Agregar campo "seleccionado" a cada logro desbloqueado
+    const respuesta = logrosUnicos.map((logro) => ({
+      _id: logro._id.toString(),
+      nombre: logro.nombre,
+      descripcion: logro.descripcion,
+      seleccionado: seleccionado === logro.nombre,
+    }))
+
+    res.status(200).json(respuesta)
+  } catch (err) {
+    console.error('Error obteniendo logros del usuario:', err)
+    res.status(500).json({ error: err.message })
+  }
+}
+
+
+
+/*Actualizar mi logro/titulo*/
+export const actualizarMiLogro = async (req, res) => {
+  try {
+    const { usuarioId } = req.params
+    const { miLogro } = req.body
+
+    if (!miLogro) {
+      return res.status(400).json({ error: 'Debe enviar un logro válido' })
+    }
+
+    // Obtener SIEMPRE el registro más reciente
+    let data = await Datauser.findOne({ usuarioId }).sort({ createdAt: -1 })
+
+    if (!data) {
+      data = new Datauser({ usuarioId, miLogro })
+    } else {
+      data.miLogro = miLogro
+    }
+
+    await data.save()
+
+    res.status(200).json({
+      message: 'Título actualizado correctamente',
+      data,
+    })
+  } catch (err) {
+    console.error('Error actualizando mi logro:', err)
+    res.status(500).json({ error: 'Error interno del servidor' })
+  }
+}
+
 /* Desbloquear logro por nombre */
 export const desbloquearLogroPorNombre = async (req, res) => {
   try {

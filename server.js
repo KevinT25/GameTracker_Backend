@@ -36,7 +36,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/achievements', achievementRoutes)
 app.use('/api/dataUser', datauserRoutes)
 app.use('/api/noticias', noticeRoutes)
-app.use('/api', logrosRoutes)
+app.use('/api/', logrosRoutes)
 
 // Servidor 
 app.listen(port, () => {

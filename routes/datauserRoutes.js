@@ -1,10 +1,12 @@
 import express from 'express'
 import Datauser from '../models/Datauser.js'
 import Users from '../models/User.js'
+import Achievement from '../models/Achievement.js'
 import { procesarLogrosAutomaticos } from '../controllers/condicioneslogro.js'
 
 const router = express.Router()
 
+//----------------------USO GENERAL----------------------//
 // Crear o actualizar una relación usuario-juego
 router.post('/', async (req, res) => {
   try {
@@ -14,8 +16,8 @@ router.post('/', async (req, res) => {
       completado,
       misjuegos,
       wishlist,
+      miLogro,
       horasJugadas,
-      karma,
       level,
     } = req.body
     let data = await Datauser.findOne({ usuarioId, juegoId })
@@ -26,7 +28,7 @@ router.post('/', async (req, res) => {
         misjuegos: misjuegos ?? data.misjuegos,
         wishlist: wishlist ?? data.wishlist,
         horasJugadas: horasJugadas ?? data.horasJugadas,
-        karma: karma ?? data.karma,
+        miLogro: miLogro ?? data.miLogro,
         level: level ?? data.level,
       })
       await data.save()
@@ -40,7 +42,7 @@ router.post('/', async (req, res) => {
       misjuegos,
       wishlist,
       horasJugadas,
-      karma,
+      miLogro,
       level,
     })
     await newData.save()
@@ -65,6 +67,47 @@ router.get('/usuario/:usuarioId', async (req, res) => {
   }
 })
 
+// Obtener un juego específico de un usuario
+router.get('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
+  try {
+    const data = await Datauser.findOne({
+      usuarioId: req.params.usuarioId,
+      juegoId: req.params.juegoId,
+    }).populate('juegoId')
+
+    if (!data) {
+      return res
+        .status(404)
+        .json({ error: 'No se encontró relación usuario-juego' })
+    }
+
+    res.status(200).json(data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Eliminar una relación usuario-juego
+router.delete('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
+  try {
+    const deleted = await Datauser.findOneAndDelete({
+      usuarioId: req.params.usuarioId,
+      juegoId: req.params.juegoId,
+    })
+
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ error: 'No se encontró relación para eliminar' })
+    }
+
+    res.status(200).json({ message: 'Relación eliminada correctamente' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+//----------------------AÑADIR A AMIGOS----------------------//
 // Crear amigos
 router.post('/usuario/:usuarioId/anadir-amigo/:amigoId', async (req, res) => {
   try {
@@ -104,26 +147,7 @@ router.post('/usuario/:usuarioId/anadir-amigo/:amigoId', async (req, res) => {
   }
 })
 
-// Obtener un juego específico de un usuario
-router.get('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
-  try {
-    const data = await Datauser.findOne({
-      usuarioId: req.params.usuarioId,
-      juegoId: req.params.juegoId,
-    }).populate('juegoId')
-
-    if (!data) {
-      return res
-        .status(404)
-        .json({ error: 'No se encontró relación usuario-juego' })
-    }
-
-    res.status(200).json(data)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
+//----------------------ESTADISITCAS----------------------//
 // Obtener estadísticas del usuario
 router.get('/usuario/:usuarioId/stats', async (req, res) => {
   try {
@@ -162,6 +186,8 @@ router.get('/usuario/:usuarioId/stats', async (req, res) => {
     const level =
       totalTiempo + totalAmigos + totalLogros + totalCompletados + totalReseñas
 
+    await procesarLogrosAutomaticos(usuarioId, 'subirNivel', null, { level })
+
     res.status(200).json({
       tiempoActivo: totalTiempo,
       cantidaddeamigos: totalAmigos,
@@ -176,6 +202,7 @@ router.get('/usuario/:usuarioId/stats', async (req, res) => {
   }
 })
 
+//-------AÑADIR A MIS JUEGOS, WISLIST O COMPLETADO---------//
 // Actualizar datos (completado, misjuegos, wishlist, etc.)
 router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
   try {
@@ -185,7 +212,6 @@ router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
     const dataActual = await Datauser.findOne({ usuarioId, juegoId })
 
     const antesCompletado = dataActual?.completado || false
-    //  const antesMisJuegos = dataActual?.misjuegos || false
     const antesWishlist = dataActual?.wishlist || false
 
     // Actualizar campos
@@ -240,6 +266,7 @@ router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
   }
 })
 
+//----------------------GENERO/PERSONAJE----------------------//
 // Obtener el género del usuario
 router.get('/usuario/:usuarioId/genero', async (req, res) => {
   try {
@@ -282,26 +309,6 @@ router.put('/usuario/:usuarioId/genero', async (req, res) => {
   } catch (err) {
     console.error('Error al actualizar género:', err)
     res.status(500).json({ error: 'Error interno del servidor' })
-  }
-})
-
-// Eliminar una relación usuario-juego
-router.delete('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {
-  try {
-    const deleted = await Datauser.findOneAndDelete({
-      usuarioId: req.params.usuarioId,
-      juegoId: req.params.juegoId,
-    })
-
-    if (!deleted) {
-      return res
-        .status(404)
-        .json({ error: 'No se encontró relación para eliminar' })
-    }
-
-    res.status(200).json({ message: 'Relación eliminada correctamente' })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
   }
 })
 

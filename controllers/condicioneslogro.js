@@ -37,7 +37,7 @@ const reglasLogros = {
 
   'Jugador Veterano': {
     evento: 'subirNivel',
-    condicion: (data) => data.level >= 30,
+    condicion: (data) => data.level >= 20,
   },
 
   'Ascenso del Eterno': {

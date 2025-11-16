@@ -17,6 +17,7 @@ const datauserSchema = new mongoose.Schema({
   amigos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }],
   cantidadamigos: { type: Number, default: 0 },
   juegoSubido: [{ type: String, default: 'owner' }],
+  miLogro: { type: String, default: '' },
   genero: { type: String, default: '' },
   loginCount: { type: Number, default: 0 },
   level: { type: Number, min: 0, max: 80, default: 0 },
