@@ -1,7 +1,6 @@
 import express from 'express'
 import Datauser from '../models/Datauser.js'
 import Users from '../models/User.js'
-import Achievement from '../models/Achievement.js'
 import { procesarLogrosAutomaticos } from '../controllers/condicioneslogro.js'
 
 const router = express.Router()
