@@ -201,6 +201,66 @@ router.get('/usuario/:usuarioId/stats', async (req, res) => {
   }
 })
 
+// Obtener estadisticas para el ranking
+router.get('/leaderboard', async (req, res) => {
+  try {
+    // Agrupa todos los registros por usuarioId
+    const data = await Datauser.aggregate([
+      {
+        $group: {
+          _id: '$usuarioId',
+          totalTiempo: { $sum: '$tiempoActivo' },
+          totalAmigos: { $max: '$cantidadamigos' },
+          totalLogros: { $sum: '$logrosObtenidos' },
+          totalCompletados: { $sum: '$juegosCompletadas' },
+          totalReseñas: { $sum: { $size: '$interaccion' } },
+        },
+      },
+      {
+        // Enlaza con la colección de usuarios
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'usuario',
+        },
+      },
+      {
+        $unwind: '$usuario',
+      },
+    ])
+
+    // 3) Cálculo del level (igual al que ya usas)
+    const leaderboard = data.map((user) => {
+      const level =
+        (user.totalTiempo || 0) +
+        (user.totalAmigos || 0) +
+        (user.totalLogros || 0) +
+        (user.totalCompletados || 0) +
+        (user.totalReseñas || 0)
+
+      return {
+        usuarioId: user._id,
+        nombre: user.usuario.nombre,
+        tiempoActivo: user.totalTiempo || 0,
+        cantidaddeamigos: user.totalAmigos || 0,
+        misionesCompletadas: user.totalCompletados || 0,
+        logrosObtenidos: user.totalLogros || 0,
+        reseñasDadas: user.totalReseñas || 0,
+        level,
+      }
+    })
+
+    // 4) Ordenamos de mayor → menor nivel
+    leaderboard.sort((a, b) => b.level - a.level)
+
+    // 5) TOP 20
+    res.status(200).json(leaderboard.slice(0, 20))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 //-------AÑADIR A MIS JUEGOS, WISLIST O COMPLETADO---------//
 // Actualizar datos (completado, misjuegos, wishlist, etc.)
 router.put('/usuario/:usuarioId/juego/:juegoId', async (req, res) => {

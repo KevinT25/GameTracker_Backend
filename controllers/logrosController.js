@@ -104,8 +104,6 @@ export const obtenerMiLogros = async (req, res) => {
   }
 }
 
-
-
 /*Actualizar mi logro/titulo*/
 export const actualizarMiLogro = async (req, res) => {
   try {
