@@ -10,7 +10,7 @@ const reglasLogros = {
 
   'Lobo fiel': {
     evento: 'login',
-    condicion: (data) => data.loginCount >= 7,
+    condicion: (data) => data.loginCount >= 3,
   },
 
   'Eco del Héroe Caído': {
@@ -22,7 +22,7 @@ const reglasLogros = {
   'Sabiduría del Archivo Perdido': {
     evento: 'muchaResena',
     condicion: (data) =>
-      (data.totalResenas || data.extra?.totalResenas || 0) >= 5,
+      (data.totalResenas || data.extra?.totalResenas || 0) >= 2,
   },
 
   'Consejero Real': {
@@ -37,12 +37,12 @@ const reglasLogros = {
 
   'Jugador Veterano': {
     evento: 'subirNivel',
-    condicion: (data) => data.level >= 20,
+    condicion: (data) => data.level >= 10,
   },
 
   'Ascenso del Eterno': {
     evento: 'subirNivel',
-    condicion: (data) => data.level >= 80,
+    condicion: (data) => data.level >= 15,
   },
 
   'Coleccionista de aventuras': {
