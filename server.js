@@ -21,10 +21,15 @@ const port = process.env.PORT || 3000
 
 app.use(
   cors({
-    origin: ['http://localhost:5173'],
-    credentials: true, 
+    origin: [
+      'https://kevint25.github.io',
+      'http://localhost:5173',
+      'https://kevint25.github.io/GameTracker_Frontend',
+    ],
+    credentials: true,
   })
 )
+
 
 app.use(express.json()) 
 app.use(express.urlencoded({ extended: true })) 
