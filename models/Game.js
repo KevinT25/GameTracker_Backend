@@ -15,6 +15,7 @@ const gameSchema = new mongoose.Schema({
   imagenPortada: { type: String, required: true, trim: true },
   descripcion: { type: String, default: 'Comienza tu aventura', trim: true },
   fechaCreacion: { type: Date, default: Date.now },
+  descarga: { type: String, default: 'download'},
 })
 
 export default mongoose.model('Game', gameSchema)
