@@ -16,6 +16,7 @@ router.post('/', async (req, res) => {
       desarrollador,
       imagenPortada,
       descripcion,
+      descarga,
     } = req.body
 
     // Validación básica
@@ -42,6 +43,7 @@ router.post('/', async (req, res) => {
       desarrollador,
       imagenPortada,
       descripcion,
+      descarga,
     })
 
     await newGame.save()
