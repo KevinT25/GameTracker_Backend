@@ -200,7 +200,8 @@ router.get('/', async (req, res) => {
     const reviews = await Review.find(filtro)
       .populate('usuarioId', 'nombre')
       .populate('juegoId', 'titulo imagenPortada')
-      .populate('respuestas.usuarioId', 'nombre')
+      .populate('comentarios.usuarioId', 'nombre')
+      .populate('comentarios.respuestas.usuarioId', 'nombre')
       .sort({ fechaCreacion: -1 })
 
     res.status(200).json(reviews)
@@ -215,7 +216,8 @@ router.get('/game/:id', async (req, res) => {
     const reviews = await Review.find({ juegoId: req.params.id })
       .populate('usuarioId', 'nombre')
       .populate('juegoId', 'titulo imagenPortada')
-      .populate('respuestas.usuarioId', 'nombre')
+      .populate('comentarios.usuarioId', 'nombre')
+      .populate('comentarios.respuestas.usuarioId', 'nombre')
       .sort({ fechaCreacion: -1 })
 
     res.status(200).json(reviews)
