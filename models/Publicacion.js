@@ -14,7 +14,7 @@ const publicacionSchema = new mongoose.Schema({
 
   tag: {
     type: String,
-    enum: ['general', 'noticia', 'reseña', 'discusion', 'pregunta', 'fanart'],
+    enum: ['general', 'discusion', 'pregunta', 'fanart', 'bug/errores'],
     default: 'general',
   },
 
