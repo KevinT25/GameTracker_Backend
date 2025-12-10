@@ -1,6 +1,7 @@
 import express from 'express'
 import Review from '../models/Review.js'
 import { procesarLogrosAutomaticos } from '../controllers/condicioneslogro.js'
+import { verificarToken } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -61,7 +62,7 @@ router.post('/', async (req, res) => {
 /* ============================================================
    2. Editar reseña
    ============================================================ */
-router.put('/:id', async (req, res) => {
+router.put('/:id', verificarToken, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id)
 
@@ -98,7 +99,7 @@ router.put('/:id', async (req, res) => {
 /* ============================================================
    3. Eliminar reseña
    ============================================================ */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verificarToken, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id)
     if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
@@ -119,7 +120,7 @@ router.delete('/:id', async (req, res) => {
 /* ============================================================
    4. Votar reseña (like / dislike)
    ============================================================ */
-router.post('/votar/:id', async (req, res) => {
+router.post('/votar/:id',verificarToken, async (req, res) => {
   try {
     const { usuarioId, voto } = req.body // voto = 1 o -1
     const review = await Review.findById(req.params.id)
@@ -150,7 +151,7 @@ router.post('/votar/:id', async (req, res) => {
 /* ============================================================
    5. Crear comentario
    ============================================================ */
-router.post('/:id/comentarios', async (req, res) => {
+router.post('/:id/comentarios',verificarToken, async (req, res) => {
   try {
     const { usuarioId, nombreUsuario, texto } = req.body
 
@@ -174,7 +175,7 @@ router.post('/:id/comentarios', async (req, res) => {
 /* ============================================================
    6. Responder a un comentario
    ============================================================ */
-router.post('/:id/comentarios/:comentarioId/responder', async (req, res) => {
+router.post('/:id/comentarios/:comentarioId/responder',verificarToken, async (req, res) => {
   try {
     const { usuarioId, nombreUsuario, texto } = req.body
 
