@@ -1,10 +1,12 @@
 import express from 'express'
 import Publicacion from '../models/Publicacion.js'
-import { verificarToken } from '../middleware/auth.js'
+import verificarToken from '../middlewares/verificarToken.js'
 
 const router = express.Router()
 
-// Sistema de cooldown en memoria
+/* ============================================================
+    SISTEMA DE COOLDOWN EN MEMORIA
+============================================================ */
 const cooldowns = {
   publicar: new Map(),
   reportar: new Map(),
@@ -13,11 +15,7 @@ const cooldowns = {
 function checkCooldown(map, userId, seconds = 2) {
   const last = map.get(userId)
   const now = Date.now()
-
-  if (last && now - last < seconds * 1000) {
-    return false
-  }
-
+  if (last && now - last < seconds * 1000) return false
   map.set(userId, now)
   return true
 }
@@ -31,22 +29,27 @@ router.post('/', verificarToken, async (req, res) => {
     const nombreUsuario = req.user.nombre || 'Usuario'
     const { titulo, contenido, tag } = req.body
 
-    if (!titulo || !contenido || !tag) {
-      return res.status(400).json({ error: 'Faltan datos requeridos.' })
+    if (!titulo?.trim() || !contenido?.trim()) {
+      return res
+        .status(400)
+        .json({ error: 'Título y contenido son requeridos.' })
     }
 
-    // Cooldown 2s
+    if (!tag) {
+      return res.status(400).json({ error: 'Debes seleccionar un tag.' })
+    }
+
     if (!checkCooldown(cooldowns.publicar, usuarioId)) {
-      return res
-        .status(429)
-        .json({ error: 'Espera 2 segundos antes de publicar de nuevo.' })
+      return res.status(429).json({
+        error: 'Espera 2 segundos antes de publicar de nuevo.',
+      })
     }
 
     const nueva = new Publicacion({
       usuarioId,
       nombreUsuario,
-      titulo,
-      contenido,
+      titulo: titulo.trim(),
+      contenido: contenido.trim(),
       tag,
     })
 
@@ -65,9 +68,7 @@ router.get('/', async (req, res) => {
     const { tag } = req.query
     const filtro = tag ? { tag } : {}
 
-    const lista = await Publicacion.find(filtro)
-      .sort({ fechaCreacion: -1 })
-      .lean()
+    const lista = await Publicacion.find(filtro).sort({ createdAt: -1 }).lean()
 
     const procesado = lista.map((pub) => ({
       ...pub,
@@ -83,18 +84,21 @@ router.get('/', async (req, res) => {
 })
 
 /* ============================================================
-    VOTAR PUBLICACIÓN
+    VOTAR PUBLICACIÓN (LIKE / DISLIKE)
 ============================================================ */
 router.post('/:id/votar', verificarToken, async (req, res) => {
   try {
     const usuarioId = req.user.id
     const { voto } = req.body
 
+    if (![1, -1].includes(voto)) {
+      return res.status(400).json({ error: 'Voto inválido.' })
+    }
+
     const pub = await Publicacion.findById(req.params.id)
     if (!pub)
-      return res.status(404).json({ error: 'Publicación no encontrada' })
+      return res.status(404).json({ error: 'Publicación no encontrada.' })
 
-    // Evitar autolike
     if (pub.usuarioId.toString() === usuarioId) {
       return res
         .status(400)
@@ -105,6 +109,7 @@ router.post('/:id/votar', verificarToken, async (req, res) => {
 
     if (yaVoto) {
       if (yaVoto.voto === voto) {
+        // Quitar voto si repite el mismo
         pub.votos = pub.votos.filter(
           (v) => v.usuarioId.toString() !== usuarioId
         )
@@ -123,7 +128,7 @@ router.post('/:id/votar', verificarToken, async (req, res) => {
 })
 
 /* ============================================================
-    COMENTAR
+    COMENTAR PUBLICACIÓN
 ============================================================ */
 router.post('/:id/comentar', verificarToken, async (req, res) => {
   try {
@@ -131,7 +136,7 @@ router.post('/:id/comentar', verificarToken, async (req, res) => {
     const nombreUsuario = req.user.nombre || 'Usuario'
     const { texto } = req.body
 
-    if (!texto.trim()) {
+    if (!texto?.trim()) {
       return res
         .status(400)
         .json({ error: 'El comentario no puede estar vacío.' })
@@ -139,12 +144,12 @@ router.post('/:id/comentar', verificarToken, async (req, res) => {
 
     const pub = await Publicacion.findById(req.params.id)
     if (!pub)
-      return res.status(404).json({ error: 'Publicación no encontrada' })
+      return res.status(404).json({ error: 'Publicación no encontrada.' })
 
     pub.comentarios.push({
       usuarioId,
       nombreUsuario,
-      texto,
+      texto: texto.trim(),
     })
 
     await pub.save()
@@ -155,7 +160,7 @@ router.post('/:id/comentar', verificarToken, async (req, res) => {
 })
 
 /* ============================================================
-    RESPONDER COMENTARIO
+    RESPONDER A UN COMENTARIO
 ============================================================ */
 router.post(
   '/:postId/comentario/:comentarioId/responder',
@@ -166,7 +171,7 @@ router.post(
       const nombreUsuario = req.user.nombre || 'Usuario'
       const { texto } = req.body
 
-      if (!texto.trim()) {
+      if (!texto?.trim()) {
         return res
           .status(400)
           .json({ error: 'La respuesta no puede estar vacía.' })
@@ -174,16 +179,16 @@ router.post(
 
       const pub = await Publicacion.findById(req.params.postId)
       if (!pub)
-        return res.status(404).json({ error: 'Publicación no encontrada' })
+        return res.status(404).json({ error: 'Publicación no encontrada.' })
 
       const comentario = pub.comentarios.id(req.params.comentarioId)
       if (!comentario)
-        return res.status(404).json({ error: 'Comentario no encontrado' })
+        return res.status(404).json({ error: 'Comentario no encontrado.' })
 
       comentario.respuestas.push({
         usuarioId,
         nombreUsuario,
-        texto,
+        texto: texto.trim(),
       })
 
       await pub.save()
@@ -202,33 +207,31 @@ router.post('/:id/reportar', verificarToken, async (req, res) => {
     const usuarioId = req.user.id
     const { motivo } = req.body
 
-    if (!motivo || !motivo.trim()) {
+    if (!motivo?.trim()) {
       return res.status(400).json({ error: 'Debes especificar un motivo.' })
     }
 
-    // Cooldown 2s
     if (!checkCooldown(cooldowns.reportar, usuarioId)) {
-      return res
-        .status(429)
-        .json({ error: 'Espera 2 segundos antes de reportar de nuevo.' })
+      return res.status(429).json({
+        error: 'Espera 2 segundos antes de reportar de nuevo.',
+      })
     }
 
     const pub = await Publicacion.findById(req.params.id)
     if (!pub)
-      return res.status(404).json({ error: 'Publicación no encontrada' })
+      return res.status(404).json({ error: 'Publicación no encontrada.' })
 
     const yaReporto = pub.reportes.find(
       (r) => r.usuarioId.toString() === usuarioId
     )
-
     if (yaReporto) {
       return res.status(400).json({ error: 'Ya reportaste esta publicación.' })
     }
 
-    pub.reportes.push({ usuarioId, motivo })
+    pub.reportes.push({ usuarioId, motivo: motivo.trim() })
     await pub.save()
 
-    res.status(200).json({ mensaje: 'Reporte enviado' })
+    res.status(200).json({ mensaje: 'Reporte enviado.' })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -244,7 +247,7 @@ router.delete('/:id', verificarToken, async (req, res) => {
 
     const pub = await Publicacion.findById(req.params.id)
     if (!pub)
-      return res.status(404).json({ error: 'Publicación no encontrada' })
+      return res.status(404).json({ error: 'Publicación no encontrada.' })
 
     if (pub.usuarioId.toString() !== usuarioId && rol !== 'admin') {
       return res
@@ -253,7 +256,7 @@ router.delete('/:id', verificarToken, async (req, res) => {
     }
 
     await pub.deleteOne()
-    res.status(200).json({ mensaje: 'Publicación eliminada' })
+    res.status(200).json({ mensaje: 'Publicación eliminada.' })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -272,22 +275,22 @@ router.delete(
 
       const pub = await Publicacion.findById(req.params.postId)
       if (!pub)
-        return res.status(404).json({ error: 'Publicación no encontrada' })
+        return res.status(404).json({ error: 'Publicación no encontrada.' })
 
       const comentario = pub.comentarios.id(req.params.comentarioId)
       if (!comentario)
-        return res.status(404).json({ error: 'Comentario no encontrado' })
+        return res.status(404).json({ error: 'Comentario no encontrado.' })
 
       if (comentario.usuarioId.toString() !== usuarioId && rol !== 'admin') {
         return res
           .status(403)
-          .json({ error: 'No tienes permiso para eliminar esto.' })
+          .json({ error: 'No tienes permiso para eliminar este comentario.' })
       }
 
       comentario.deleteOne()
       await pub.save()
 
-      res.status(200).json({ mensaje: 'Comentario eliminado' })
+      res.status(200).json({ mensaje: 'Comentario eliminado.' })
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
@@ -307,26 +310,26 @@ router.delete(
 
       const pub = await Publicacion.findById(req.params.postId)
       if (!pub)
-        return res.status(404).json({ error: 'Publicación no encontrada' })
+        return res.status(404).json({ error: 'Publicación no encontrada.' })
 
       const comentario = pub.comentarios.id(req.params.comentarioId)
       if (!comentario)
-        return res.status(404).json({ error: 'Comentario no encontrado' })
+        return res.status(404).json({ error: 'Comentario no encontrado.' })
 
       const respuesta = comentario.respuestas.id(req.params.respuestaId)
       if (!respuesta)
-        return res.status(404).json({ error: 'Respuesta no encontrada' })
+        return res.status(404).json({ error: 'Respuesta no encontrada.' })
 
       if (respuesta.usuarioId.toString() !== usuarioId && rol !== 'admin') {
-        return res.status(403).json({
-          error: 'No tienes permiso para eliminar esta respuesta.',
-        })
+        return res
+          .status(403)
+          .json({ error: 'No tienes permiso para eliminar esta respuesta.' })
       }
 
       respuesta.deleteOne()
       await pub.save()
 
-      res.status(200).json({ mensaje: 'Respuesta eliminada' })
+      res.status(200).json({ mensaje: 'Respuesta eliminada.' })
     } catch (err) {
       res.status(500).json({ error: err.message })
     }

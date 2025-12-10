@@ -3,7 +3,7 @@ import Achievement from '../models/Achievement.js'
 
 // Tabla de reglas por nombre de logro
 const reglasLogros = {
-  'El Juramento del Acero': {
+  'Primer paso': {
     evento: 'login',
     condicion: () => true,
   },
@@ -13,7 +13,7 @@ const reglasLogros = {
     condicion: (data) => data.loginCount >= 3,
   },
 
-  'Eco del Héroe Caído': {
+  Escriba: {
     evento: 'nuevaResena',
     condicion: (data) =>
       (data.totalResenas || data.extra?.totalResenas || 0) >= 1,
@@ -25,7 +25,7 @@ const reglasLogros = {
       (data.totalResenas || data.extra?.totalResenas || 0) >= 2,
   },
 
-  'Consejero Real': {
+  'Consejero del rey': {
     evento: 'respuestaComentario',
     condicion: (data) => (data.respuestasTotales || 0) >= 1,
   },
@@ -48,7 +48,7 @@ const reglasLogros = {
   'Coleccionista de aventuras': {
     evento: 'misJuegos',
     condicion: (data) => data.misjuegos === true,
-  }
+  },
 }
 
 export const procesarLogrosAutomaticos = async (
@@ -90,4 +90,3 @@ export const procesarLogrosAutomaticos = async (
     console.error('❌ Error verificando logros automáticos:', err)
   }
 }
-

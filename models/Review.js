@@ -1,5 +1,22 @@
 import mongoose from 'mongoose'
 
+const respuestaSchema = new mongoose.Schema({
+  usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  nombreUsuario: String,
+  texto: String,
+  fecha: { type: Date, default: Date.now },
+  fechaEdicion: { type: Date, default: null },
+})
+
+const comentarioSchema = new mongoose.Schema({
+  usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  nombreUsuario: String,
+  texto: String,
+  fecha: { type: Date, default: Date.now },
+  fechaEdicion: { type: Date, default: null },
+  respuestas: [respuestaSchema],
+})
+
 const reviewSchema = new mongoose.Schema({
   juegoId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,7 +30,10 @@ const reviewSchema = new mongoose.Schema({
   },
 
   nombreUsuario: { type: String, required: true },
-  // Datos principales de la reseña
+
+  // -------------------------------
+  // Campos principales que pediste
+  // -------------------------------
   puntuacion: { type: Number, min: 0, max: 5, required: true },
   textoResenia: { type: String, trim: true },
   horasJugadas: { type: Number, default: 0 },
@@ -21,48 +41,17 @@ const reviewSchema = new mongoose.Schema({
   recomendaria: { type: Boolean, default: true },
   fechaCreacion: { type: Date, default: Date.now },
   fechaEdicion: { type: Date, default: null },
-  // Sistema de etiquetas (opcional)
-  tags: [{ type: String }],
 
-  // Sistema de votos
+  // Sistema de votos (like / dislike)
   votos: [
     {
-      usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      voto: { type: Number, enum: [1, -1] }, // 1 = like, -1 = dislike
-    }
+      usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      voto: { type: Number, enum: [1, -1] },
+    },
   ],
 
-  // Sistema de reportes (moderación)
-  reportes: [
-    {
-      usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      motivo: { type: String, trim: true },
-      fecha: { type: Date, default: Date.now },
-    }
-  ],
-
-  // Comentarios anidados tipo foro
-  comentarios: [
-    {
-      usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      nombreUsuario: String,
-      texto: String,
-      fecha: { type: Date, default: Date.now },
-      fechaEdicion: { type: Date, default: null },
-
-      // Para respuestas anidadas
-      respuestas: [
-        {
-          usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-          nombreUsuario: String,
-          texto: String,
-          fecha: { type: Date, default: Date.now },
-          fechaEdicion: { type: Date, default: null },
-        }
-      ]
-    }
-  ]
-});
-
+  // Comentarios e hilos
+  comentarios: [comentarioSchema],
+})
 
 export default mongoose.model('Review', reviewSchema)
