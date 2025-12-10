@@ -1,6 +1,6 @@
 import express from 'express'
 import Publicacion from '../models/Publicacion.js'
-import verificarToken from '../middleware/auth.js'
+import { verificarToken } from '../middleware/auth.js'
 
 const router = express.Router()
 
