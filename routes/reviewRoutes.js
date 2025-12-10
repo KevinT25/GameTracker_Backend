@@ -42,6 +42,10 @@ router.post('/', async (req, res) => {
 
     await review.save()
 
+    await review.populate([
+      { path: 'usuarioId', select: 'nombre' },
+      { path: 'juegoId', select: 'titulo' },
+    ])
     // Notificar logro → nuevaResena
     await procesarLogrosAutomaticos(usuarioId, 'nuevaResena', juegoId, {
       totalResenas: await Review.countDocuments({ usuarioId }),
@@ -120,10 +124,13 @@ router.delete('/:id', verificarToken, async (req, res) => {
 /* ============================================================
    4. Votar reseña (like / dislike)
    ============================================================ */
-router.post('/votar/:id',verificarToken, async (req, res) => {
+router.post('/votar/:id', verificarToken, async (req, res) => {
   try {
     const { usuarioId, voto } = req.body // voto = 1 o -1
     const review = await Review.findById(req.params.id)
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
+
 
     if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
     if (review.usuarioId.toString() === usuarioId) {
@@ -141,6 +148,12 @@ router.post('/votar/:id',verificarToken, async (req, res) => {
     }
 
     await review.save()
+
+    await review.populate([
+      { path: 'usuarioId', select: 'nombre' },
+      { path: 'juegoId', select: 'titulo' },
+    ])
+
     res.json(review)
   } catch (err) {
     console.error('Error votando reseña:', err)
@@ -151,11 +164,14 @@ router.post('/votar/:id',verificarToken, async (req, res) => {
 /* ============================================================
    5. Crear comentario
    ============================================================ */
-router.post('/:id/comentarios',verificarToken, async (req, res) => {
+router.post('/:id/comentarios', verificarToken, async (req, res) => {
   try {
     const { usuarioId, nombreUsuario, texto } = req.body
 
     const review = await Review.findById(req.params.id)
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
+
     if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
 
     review.comentarios.push({
@@ -165,6 +181,12 @@ router.post('/:id/comentarios',verificarToken, async (req, res) => {
     })
 
     await review.save()
+
+    await review.populate([
+      { path: 'usuarioId', select: 'nombre' },
+      { path: 'juegoId', select: 'titulo' },
+    ])
+
     res.json(review)
   } catch (err) {
     console.error('Error comentando reseña:', err)
@@ -175,36 +197,41 @@ router.post('/:id/comentarios',verificarToken, async (req, res) => {
 /* ============================================================
    6. Responder a un comentario
    ============================================================ */
-router.post('/:id/comentarios/:comentarioId/responder',verificarToken, async (req, res) => {
-  try {
-    const { usuarioId, nombreUsuario, texto } = req.body
+router.post(
+  '/:id/comentarios/:comentarioId/responder',
+  verificarToken,
+  async (req, res) => {
+    try {
+      const { usuarioId, nombreUsuario, texto } = req.body
 
-    const review = await Review.findById(req.params.id)
-    if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
+      const review = await Review.findById(req.params.id)
+      if (!review)
+        return res.status(404).json({ error: 'Reseña no encontrada' })
 
-    const comentario = review.comentarios.id(req.params.comentarioId)
-    if (!comentario)
-      return res.status(404).json({ error: 'Comentario no encontrado' })
+      const comentario = review.comentarios.id(req.params.comentarioId)
+      if (!comentario)
+        return res.status(404).json({ error: 'Comentario no encontrado' })
 
-    comentario.respuestas.push({
-      usuarioId,
-      nombreUsuario,
-      texto,
-    })
+      comentario.respuestas.push({
+        usuarioId,
+        nombreUsuario,
+        texto,
+      })
 
-    await review.save()
+      await review.save()
 
-    // Notificar logro → respuestaComentario
-    await procesarLogrosAutomaticos(usuarioId, 'respuestaComentario', null, {
-      respuestasTotales: comentario.respuestas.length,
-    })
+      // Notificar logro → respuestaComentario
+      await procesarLogrosAutomaticos(usuarioId, 'respuestaComentario', null, {
+        respuestasTotales: comentario.respuestas.length,
+      })
 
-    res.json(review)
-  } catch (err) {
-    console.error('Error respondiendo comentario:', err)
-    res.status(500).json({ error: err.message })
+      res.json(review)
+    } catch (err) {
+      console.error('Error respondiendo comentario:', err)
+      res.status(500).json({ error: err.message })
+    }
   }
-})
+)
 
 /* ============================================================
    7. Obtener todas las reseñas de un juego
@@ -212,8 +239,11 @@ router.post('/:id/comentarios/:comentarioId/responder',verificarToken, async (re
 router.get('/juego/:juegoId', async (req, res) => {
   try {
     const reviews = await Review.find({ juegoId: req.params.juegoId })
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
       .sort({ fechaCreacion: -1 })
       .lean()
+
 
     res.json(reviews)
   } catch (err) {
@@ -228,6 +258,8 @@ router.get('/juego/:juegoId', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const review = await Review.findById(req.params.id)
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo')
     if (!review) return res.status(404).json({ error: 'Reseña no encontrada' })
 
     res.json(review)
