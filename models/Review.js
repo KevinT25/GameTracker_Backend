@@ -28,17 +28,11 @@ const reviewSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-
-  nombreUsuario: { type: String, required: true },
-
-  // -------------------------------
-  // Campos principales que pediste
-  // -------------------------------
-  puntuacion: { type: Number, min: 0, max: 5, required: true },
-  textoResenia: { type: String, trim: true },
+  puntuacion: { type: Number, min: 0, max: 5 },
+  textoResenia: { type: String, trim: true, required: true },
   horasJugadas: { type: Number, default: 0 },
   asunto: { type: String },
-  recomendaria: { type: Boolean, default: true },
+  recomendaria: { type: Boolean, default: false },
   fechaCreacion: { type: Date, default: Date.now },
   fechaEdicion: { type: Date, default: null },
 
