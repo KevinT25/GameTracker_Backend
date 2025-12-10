@@ -1,6 +1,6 @@
 import express from 'express'
 import Review from '../models/Review.js'
-import { procesarLogrosAutomaticos } from '../utils/procesarLogros.js'
+import { procesarLogrosAutomaticos } from '../controllers/condicioneslogro.js'
 
 const router = express.Router()
 
