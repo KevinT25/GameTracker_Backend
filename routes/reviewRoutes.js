@@ -269,4 +269,22 @@ router.get('/:id', async (req, res) => {
   }
 })
 
+/* ============================================================
+   9. Obtener TODAS las reseñas
+   ============================================================ */
+router.get('/', async (req, res) => {
+  try {
+    const reviews = await Review.find()
+      .populate('usuarioId', 'nombre')
+      .populate('juegoId', 'titulo imagenPortada')
+      .sort({ fechaCreacion: -1 })
+      .lean()
+
+    res.json(reviews)
+  } catch (err) {
+    console.error('Error obteniendo reseñas:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router
