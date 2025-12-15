@@ -65,7 +65,7 @@ const publicacionSchema = new mongoose.Schema(
     fechaEdicion: { type: Date, default: null },
   },
   {
-    timestamps: true, // createdAt/updatedAt automáticos
+    timestamps: true, 
   }
 )
 

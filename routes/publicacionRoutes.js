@@ -190,7 +190,6 @@ router.post(
         nombreUsuario,
         texto: texto.trim(),
       })
-
       await pub.save()
       res.status(200).json(pub)
     } catch (err) {

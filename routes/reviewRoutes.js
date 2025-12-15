@@ -202,15 +202,23 @@ router.post(
   verificarToken,
   async (req, res) => {
     try {
-      const { usuarioId, nombreUsuario, texto } = req.body
+      const { texto } = req.body
+      if (!texto || !texto.trim()) {
+        return res.status(400).json({ error: 'Respuesta vacía' })
+      }
+
+      const usuarioId = req.usuario.id
+      const nombreUsuario = req.usuario.nombre
 
       const review = await Review.findById(req.params.id)
-      if (!review)
+      if (!review) {
         return res.status(404).json({ error: 'Reseña no encontrada' })
+      }
 
       const comentario = review.comentarios.id(req.params.comentarioId)
-      if (!comentario)
+      if (!comentario) {
         return res.status(404).json({ error: 'Comentario no encontrado' })
+      }
 
       comentario.respuestas.push({
         usuarioId,
@@ -218,12 +226,8 @@ router.post(
         texto,
       })
 
+      review.markModified('comentarios')
       await review.save()
-
-      // Notificar logro → respuestaComentario
-      await procesarLogrosAutomaticos(usuarioId, 'respuestaComentario', null, {
-        respuestasTotales: comentario.respuestas.length,
-      })
 
       res.json(review)
     } catch (err) {
@@ -232,6 +236,7 @@ router.post(
     }
   }
 )
+
 
 /* ============================================================
    7. Obtener todas las reseñas de un juego
