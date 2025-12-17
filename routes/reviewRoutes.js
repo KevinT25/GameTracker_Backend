@@ -203,12 +203,12 @@ router.post(
   async (req, res) => {
     try {
       const { texto } = req.body
-      if (!texto || !texto.trim()) {
+      if (!texto?.trim()) {
         return res.status(400).json({ error: 'Respuesta vacía' })
       }
 
-      const usuarioId = req.usuario.id
-      const nombreUsuario = req.usuario.nombre
+      const usuarioId = req.user.id
+      const nombreUsuario = req.user.nombre || 'Usuario'
 
       const review = await Review.findById(req.params.id)
       if (!review) {
@@ -223,20 +223,23 @@ router.post(
       comentario.respuestas.push({
         usuarioId,
         nombreUsuario,
-        texto,
+        texto: texto.trim(),
       })
 
       review.markModified('comentarios')
       await review.save()
 
-      res.json(review)
+      if (!req.user) {
+        return res.status(401).json({ error: 'Usuario no autenticado' })
+      }
+
+      res.status(200).json(review)
     } catch (err) {
       console.error('Error respondiendo comentario:', err)
       res.status(500).json({ error: err.message })
     }
   }
 )
-
 
 /* ============================================================
    7. Obtener todas las reseñas de un juego
