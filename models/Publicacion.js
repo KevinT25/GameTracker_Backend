@@ -36,8 +36,8 @@ const publicacionSchema = new mongoose.Schema(
     nombreUsuario: { type: String, required: true },
 
     titulo: { type: String, required: true, trim: true },
-    
-    contenido: { type: String, required: true, trim: true },
+
+    contenido: { type: String, trim: true, default: '',},
 
     tag: {
       type: String,
