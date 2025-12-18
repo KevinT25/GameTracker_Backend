@@ -37,7 +37,7 @@ const publicacionSchema = new mongoose.Schema(
 
     titulo: { type: String, required: true, trim: true },
 
-    contenido: { type: String, trim: true, default: '',},
+    contenido: { type: String, trim: true, default: '' },
 
     tag: {
       type: String,
@@ -56,7 +56,7 @@ const publicacionSchema = new mongoose.Schema(
 
     imagenes: [
       {
-        url: { type: String, required: true }, 
+        url: { type: String, default: '' },
       },
     ],
 
