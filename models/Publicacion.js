@@ -52,6 +52,12 @@ const publicacionSchema = new mongoose.Schema(
     ],
 
     comentarios: [comentarioSchema],
+    
+    imagenes: [
+      {
+        url: { type: String, required: true }, 
+      },
+    ],
 
     reportes: [
       {
@@ -65,7 +71,7 @@ const publicacionSchema = new mongoose.Schema(
     fechaEdicion: { type: Date, default: null },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 )
 
