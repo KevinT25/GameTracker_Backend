@@ -36,6 +36,7 @@ const publicacionSchema = new mongoose.Schema(
     nombreUsuario: { type: String, required: true },
 
     titulo: { type: String, required: true, trim: true },
+    
     contenido: { type: String, required: true, trim: true },
 
     tag: {
@@ -52,7 +53,7 @@ const publicacionSchema = new mongoose.Schema(
     ],
 
     comentarios: [comentarioSchema],
-    
+
     imagenes: [
       {
         url: { type: String, required: true }, 

@@ -37,20 +37,22 @@ router.post('/', verificarToken, async (req, res) => {
       return res.status(400).json({ error: 'Debes seleccionar un tag.' })
     }
 
-    // Validación especial para FANART
     if (tag === 'fanart') {
-      if (!Array.isArray(imagenes) || imagenes.length === 0) {
+      if (
+        !Array.isArray(imagenes) ||
+        imagenes.length === 0 ||
+        !imagenes.every(
+          (img) => typeof img === 'string' && img.trim().startsWith('http')
+        )
+      ) {
         return res.status(400).json({
-          error: 'Las publicaciones de fanart deben tener al menos una imagen.',
+          error: 'El fanart debe incluir al menos una URL válida.',
         })
       }
-    } else {
-      // Para el resto, el contenido sí es obligatorio
-      if (!contenido?.trim()) {
-        return res.status(400).json({
-          error: 'El contenido es requerido.',
-        })
-      }
+    } else if (!contenido?.trim()) {
+      return res.status(400).json({
+        error: 'El contenido es requerido.',
+      })
     }
 
     if (!checkCooldown(cooldowns.publicar, usuarioId)) {
@@ -65,7 +67,8 @@ router.post('/', verificarToken, async (req, res) => {
       titulo: titulo.trim(),
       contenido: contenido?.trim() || '',
       tag,
-      imagenes: tag === 'fanart' ? imagenes : [],
+      imagenes:
+        tag === 'fanart' ? imagenes.map((img) => ({ url: img.trim() })) : [],
     })
 
     await nueva.save()
